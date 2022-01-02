@@ -1,20 +1,43 @@
 import os
 import glob
 import math
+import random
 import pydicom #working with dicom
 import pywt #working with wavelets
 
 import matplotlib.pyplot as plt
 import numpy as np
 
-from skimage import restoration, exposure
+from skimage import restoration, exposure, morphology, measure
 
 #function -> show image
-def show_image(img, title=None):
+def plot_image(img, title=None):
     plt.imshow(img, cmap="gray"), plt.title(title)
     plt.xticks([]), plt.yticks([])
     plt.show()
 
+def plot_rois(img):
+    fig, axs = plt.subplots(3, 3)
+    axs[0,0].imshow(img[0], cmap="gist_gray")
+    axs[0,0].axis('off')
+    axs[0,1].imshow(img[1], cmap="gist_gray")
+    axs[0,1].axis('off')
+    axs[0,2].imshow(img[2], cmap="gist_gray")
+    axs[0,2].axis('off')
+    axs[1,0].imshow(img[3], cmap="gist_gray")
+    axs[1,0].axis('off')
+    axs[1,1].imshow(img[4], cmap="gist_gray")
+    axs[1,1].axis('off')
+    axs[1,2].imshow(img[5], cmap="gist_gray")
+    axs[1,2].axis('off')
+    axs[2,0].imshow(img[6], cmap="gist_gray")
+    axs[2,0].axis('off')
+    axs[2,1].imshow(img[7], cmap="gist_gray")
+    axs[2,1].axis('off')
+    axs[2,2].imshow(img[8], cmap="gist_gray")
+    axs[2,2].axis('off')
+    plt.show()
+    
 #function -> wiener filter
 def wiener_filter(img):
         psf = np.ones((5, 5)) / 25
@@ -72,10 +95,26 @@ def wavelet_clahe(img):
     cD_t = cD1 + (k*cD2)
     cD_new = pywt.threshold(data=cD, value=cD_t, mode='soft', substitute=0)
 
-    cA_new = exposure.equalize_adapthist(cA, clip_limit=0.01)
+    cA_max = np.max(cA)
+    cA1 = cA/cA_max
+    cA2 = exposure.equalize_adapthist(cA1, clip_limit=0.01)
+    cA_new = cA2*cA_max
 
     return (pywt.waverec2(coeffs=[cA_new, (cH_new, cV_new, cD_new)], wavelet=wave_name ))
 
+#function -> segmemntation
+def segmentation(img):
+    se = morphology.square(3)
+    imD = morphology.dilation(img, footprint=se)
+    imR = morphology.reconstruction(imD, img, method='erosion', footprint=se )
+    
+    intM = morphology.local_maxima(imR)
+    intM = morphology.closing(intM, footprint=se)
+
+    labels, num = measure.label(intM, return_num=True)
+
+    return intM
+ 
 img_dir = 'C:\\Users\\Equipacare\\Desktop\\image code\\images'
 data_path = os.path.join(img_dir, '*dcm')
 files = glob.glob(data_path)
@@ -110,9 +149,13 @@ for file in files:
         #wavelet filter
         l_wavelet.append(wavelet_filter(roi))
         #wavelet + clahe
-        #images of type float must be between -1 and 1
         l_clahe.append(wavelet_clahe(roi))
     
-    len(l_wiener) #number of ROIs -> each element in the list is a image
-    len(l_wavelet)
-    len(l_clahe)
+    l_intM = [] 
+    for roi in l_wiener:
+        roi_segm = segmentation(roi)
+        l_intM.append(roi_segm)
+
+    test = random.sample(l_intM, 9)
+    plot_rois(test)
+
