@@ -8,41 +8,56 @@ import pywt #working with wavelets
 import matplotlib.pyplot as plt
 import numpy as np
 
-from skimage import restoration, exposure, morphology, measure
+from skimage import restoration, exposure, morphology, measure, filters, segmentation, color
+from skimage import img_as_float64, img_as_ubyte, img_as_uint
+from scipy import ndimage, signal
 
 #function -> show image
 def plot_image(img, title=None):
-    plt.imshow(img, cmap="gray"), plt.title(title)
+    plt.imshow(img, cmap="gray", vmin=0, vmax=4095), plt.title(title)
     plt.xticks([]), plt.yticks([])
     plt.show()
 
-def plot_rois(img):
+def plot_rois(list):
+    img = random.sample(list, 9)
     fig, axs = plt.subplots(3, 3)
-    axs[0,0].imshow(img[0], cmap="gist_gray")
+    axs[0,0].imshow(img[0], cmap="gray", vmin=0, vmax=4095)
     axs[0,0].axis('off')
-    axs[0,1].imshow(img[1], cmap="gist_gray")
+
+    axs[0,1].imshow(img[1], cmap="gray", vmin=0, vmax=4095)
     axs[0,1].axis('off')
-    axs[0,2].imshow(img[2], cmap="gist_gray")
+
+    axs[0,2].imshow(img[2], cmap="gray", vmin=0, vmax=4095)
     axs[0,2].axis('off')
-    axs[1,0].imshow(img[3], cmap="gist_gray")
+
+    axs[1,0].imshow(img[3], cmap="gray", vmin=0, vmax=4095)
     axs[1,0].axis('off')
-    axs[1,1].imshow(img[4], cmap="gist_gray")
+
+    axs[1,1].imshow(img[4], cmap="gray", vmin=0, vmax=4095)
     axs[1,1].axis('off')
-    axs[1,2].imshow(img[5], cmap="gist_gray")
+
+    axs[1,2].imshow(img[5], cmap="gray", vmin=0, vmax=4095)
     axs[1,2].axis('off')
-    axs[2,0].imshow(img[6], cmap="gist_gray")
+
+    axs[2,0].imshow(img[6], cmap="gray", vmin=0, vmax=4095)
     axs[2,0].axis('off')
-    axs[2,1].imshow(img[7], cmap="gist_gray")
+
+    axs[2,1].imshow(img[7], cmap="gray", vmin=0, vmax=4095)
     axs[2,1].axis('off')
-    axs[2,2].imshow(img[8], cmap="gist_gray")
+    
+    axs[2,2].imshow(img[8], cmap="gray", vmin=0, vmax=4095)
     axs[2,2].axis('off')
     plt.show()
-    
+
 #function -> wiener filter
+#ERRADO
 def wiener_filter(img):
-        psf = np.ones((5, 5)) / 25
-        img_wiener, _ = restoration.unsupervised_wiener(img, psf)
-        return img_wiener
+    psf = np.ones((5, 5))
+    img = signal.convolve2d(img, psf, 'same')
+    rng = np.random.default_rng()
+    img += 0.1 * img.std() * rng.standard_normal(img.shape)
+    img_wiener = restoration.wiener(img, psf, 1100, clip=True)
+    return img_wiener
 
 #function -> wavelet filter
 def wavelet_filter(img):
@@ -103,17 +118,52 @@ def wavelet_clahe(img):
     return (pywt.waverec2(coeffs=[cA_new, (cH_new, cV_new, cD_new)], wavelet=wave_name ))
 
 #function -> segmemntation
-def segmentation(img):
-    se = morphology.square(3)
+def w_segmentation(img):
+    se = np.ones((3,3), np.uint16)
     imD = morphology.dilation(img, footprint=se)
     imR = morphology.reconstruction(imD, img, method='erosion', footprint=se )
     
     intM = morphology.local_maxima(imR)
     intM = morphology.closing(intM, footprint=se)
 
-    labels, num = measure.label(intM, return_num=True)
+    #selecting markers
+    #checking local_maxima information
+    m_labels, m_num = measure.label(intM, return_num=True, connectivity=1) #con. 1 -> 4 neighborhood, 
+    m_props = measure.regionprops(label_image=m_labels, intensity_image=img)
 
-    return intM
+    valid_labels = set()
+    for marker in m_props:
+        m_area = marker.area <= 30
+        m_mj_length =  marker.axis_major_length <= 50
+        if m_area and m_mj_length:
+            valid_labels.add(marker.label)
+
+    #checking ROI
+    if len(valid_labels) < 3:
+        return 
+    else: 
+        markers = np.in1d(m_labels, list(valid_labels)).reshape(m_labels.shape)
+        markers = ndimage.label(markers)[0]
+        gmag = filters.laplace(img, ksize=3)
+        r_watershed = segmentation.watershed(gmag, markers, watershed_line=False)
+
+        w_labels, w_num = measure.label(r_watershed, return_num=True, connectivity=1)
+        w_props = measure.regionprops(label_image=w_labels, intensity_image=img)
+        
+        valid_regions = set()
+        for region in w_props:
+            r_area = region.area <= 30
+            r_mj_length = region.axis_major_length <= 50
+            if r_area and r_mj_length:
+                valid_regions.add(region.label)
+
+            #checking ROI
+        if len(valid_regions) < 3:
+            return 
+        else: 
+            result = np.in1d(w_labels, list(valid_regions)).reshape(w_labels.shape)
+            result = ndimage.label(result)[0]
+            return result
  
 img_dir = 'C:\\Users\\Equipacare\\Desktop\\image code\\images'
 data_path = os.path.join(img_dir, '*dcm')
@@ -123,7 +173,6 @@ roi_data = []
 for file in files:
     img = pydicom.dcmread(file)
     img = img.pixel_array
-    data.append(img)
     len(data) #number of images -> each element in the list is a image
 
     #create a list of ROIs for each image
@@ -140,22 +189,22 @@ for file in files:
     len(roi_data) #number of ROIs -> each element in the list is a image
 
     #create a list of ROIs for each processing
-    l_wiener = []
+    #l_wiener = []
     l_wavelet = []
     l_clahe = []
     for roi in roi_data:
         #wiener filter
-        l_wiener.append(wiener_filter(roi))
+        #l_wiener.append(wiener_filter(roi))
         #wavelet filter
         l_wavelet.append(wavelet_filter(roi))
         #wavelet + clahe
         l_clahe.append(wavelet_clahe(roi))
     
-    l_intM = [] 
-    for roi in l_wiener:
-        roi_segm = segmentation(roi)
-        l_intM.append(roi_segm)
-
-    test = random.sample(l_intM, 9)
-    plot_rois(test)
+    l_watershed = [] 
+    for roi in roi_data:
+        roi_segm = w_segmentation(roi)
+        if roi_segm is not None:
+            l_watershed.append(roi_segm)
+        else:
+            continue
 
