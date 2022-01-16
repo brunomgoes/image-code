@@ -7,10 +7,13 @@ import pywt #working with wavelets
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 from skimage import restoration, exposure, morphology, measure, filters, segmentation, color
 from skimage import img_as_float64, img_as_ubyte, img_as_uint
 from scipy import ndimage, signal
+
+df = pd.DataFrame(columns=['area'])
 
 #function -> show image
 def plot_image(img, title=None):
@@ -118,7 +121,8 @@ def wavelet_clahe(img):
     return (pywt.waverec2(coeffs=[cA_new, (cH_new, cV_new, cD_new)], wavelet=wave_name ))
 
 #function -> segmemntation
-def w_segmentation(img):
+def w_segmentation(roi):
+    img = roi['img_roi']
     se = np.ones((3,3), np.uint16)
     imD = morphology.dilation(img, footprint=se)
     imR = morphology.reconstruction(imD, img, method='erosion', footprint=se )
@@ -141,7 +145,8 @@ def w_segmentation(img):
     #checking ROI
     if len(valid_labels) < 3:
         return 
-    else: 
+    else:
+        result_dict = {'num_markers': len(valid_labels)} 
         markers = np.in1d(m_labels, list(valid_labels)).reshape(m_labels.shape)
         markers = ndimage.label(markers)[0]
         gmag = filters.laplace(img, ksize=3)
@@ -169,40 +174,33 @@ img_dir = 'C:\\Users\\Equipacare\\Desktop\\image code\\images'
 data_path = os.path.join(img_dir, '*dcm')
 files = glob.glob(data_path)
 data = [] #list of original images
-roi_data = []
 for file in files:
-    img = pydicom.dcmread(file)
-    img = img.pixel_array
-    len(data) #number of images -> each element in the list is a image
+    dicom_file = pydicom.dcmread(file)
+    img_dict = {'name': os.path.basename(file),
+                'image': dicom_file.pixel_array}
+    img = dicom_file.pixel_array
 
     #create a list of ROIs for each image
     row, col = img.shape
+    roi_index = 0
+    roi_data = []
     for x in range(0, row, 50):
         for y in range(0, col, 50):
             roi = img[x:x+100, y:y+100]
             #check if max value in roi is 0
             if np.max(roi) !=0:
-                roi_data.append(roi)
-                #how to get x and y for each roi?
-                #x -> row position
-                #y -> col position
-    len(roi_data) #number of ROIs -> each element in the list is a image
+                roi_dict = {'index': roi_index,
+                            'img_roi': roi,
+                            'x': x,
+                            'y': y}
+                roi_data.append(roi_dict)
+                roi_index += 1
+    img_dict.update({'roi_list': roi_data})
+    data.append(img_dict) 
 
-    #create a list of ROIs for each processing
-    #l_wiener = []
-    l_wavelet = []
-    l_clahe = []
-    for roi in roi_data:
-        #wiener filter
-        #l_wiener.append(wiener_filter(roi))
-        #wavelet filter
-        l_wavelet.append(wavelet_filter(roi))
-        #wavelet + clahe
-        l_clahe.append(wavelet_clahe(roi))
-    
     l_watershed = [] 
     for roi in roi_data:
-        roi_segm = w_segmentation(roi)
+        roi_segm = w_segmentation(roi) #roi is a dict
         if roi_segm is not None:
             l_watershed.append(roi_segm)
         else:
