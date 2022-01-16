@@ -1,19 +1,18 @@
-import os
 import glob
 import math
+import os
 import random
-import pydicom #working with dicom
-import pywt #working with wavelets
+from unittest import result
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-
-from skimage import restoration, exposure, morphology, measure, filters, segmentation, color
-from skimage import img_as_float64, img_as_ubyte, img_as_uint
+import pydicom  # working with dicom
+import pywt  # working with wavelets
 from scipy import ndimage, signal
-
-df = pd.DataFrame(columns=['area'])
+from skimage import (color, exposure, filters, img_as_float64, img_as_ubyte,
+                     img_as_uint, measure, morphology, restoration,
+                     segmentation)
 
 #function -> show image
 def plot_image(img, title=None):
@@ -121,7 +120,7 @@ def wavelet_clahe(img):
     return (pywt.waverec2(coeffs=[cA_new, (cH_new, cV_new, cD_new)], wavelet=wave_name ))
 
 #function -> segmemntation
-def w_segmentation(roi):
+def w_segmentation(roi): #roi is a dict
     img = roi['img_roi']
     se = np.ones((3,3), np.uint16)
     imD = morphology.dilation(img, footprint=se)
@@ -146,9 +145,12 @@ def w_segmentation(roi):
     if len(valid_labels) < 3:
         return 
     else:
-        result_dict = {'num_markers': len(valid_labels)} 
         markers = np.in1d(m_labels, list(valid_labels)).reshape(m_labels.shape)
         markers = ndimage.label(markers)[0]
+        m_props = measure.regionprops(label_image=markers, intensity_image=img)
+        result_dict = {'num_markers': len(valid_labels),
+                        'markers_props': measure.regionprops(markers, intensity_image=img)} 
+
         gmag = filters.laplace(img, ksize=3)
         r_watershed = segmentation.watershed(gmag, markers, watershed_line=False)
 
@@ -163,12 +165,18 @@ def w_segmentation(roi):
                 valid_regions.add(region.label)
 
             #checking ROI
-        if len(valid_regions) < 3:
+        if len(valid_regions) < 3 or len(valid_regions) > 50:
             return 
         else: 
             result = np.in1d(w_labels, list(valid_regions)).reshape(w_labels.shape)
             result = ndimage.label(result)[0]
-            return result
+            result_dict = {'num_markers': len(valid_labels),
+                            'markers': markers,
+                            'markers_props': measure.regionprops(markers, intensity_image=img),
+                            'num_regions': len(valid_regions),
+                            'regions': result, #labels selecionadas
+                            'regions_props': measure.regionprops(result, intensity_image=img)}          
+            return result_dict
  
 img_dir = 'C:\\Users\\Equipacare\\Desktop\\image code\\images'
 data_path = os.path.join(img_dir, '*dcm')
@@ -198,11 +206,10 @@ for file in files:
     img_dict.update({'roi_list': roi_data})
     data.append(img_dict) 
 
-    l_watershed = [] 
     for roi in roi_data:
-        roi_segm = w_segmentation(roi) #roi is a dict
-        if roi_segm is not None:
-            l_watershed.append(roi_segm)
+        results = w_segmentation(roi) #roi is a dict
+        if results is not None:
+            roi_dict.update(results)
         else:
             continue
 
