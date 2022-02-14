@@ -2,7 +2,6 @@ import glob
 import math
 import os
 import random
-from unittest import result
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,8 +14,8 @@ from skimage import (color, exposure, filters, img_as_float64, img_as_ubyte,
                      segmentation)
 
 #function -> show image
-def plot_image(img, title=None):
-    plt.imshow(img, cmap="gray", vmin=0, vmax=4095), plt.title(title)
+def plot_markers(img, title=None):
+    plt.imshow(img, cmap='gray'), plt.title(title)
     plt.xticks([]), plt.yticks([])
     plt.show()
 
@@ -125,7 +124,8 @@ def w_segmentation(roi): #roi is a dict
     se = np.ones((3,3), np.uint16)
     imD = morphology.dilation(img, footprint=se)
     imR = morphology.reconstruction(imD, img, method='erosion', footprint=se )
-    
+    imR = imR.astype(int)
+
     intM = morphology.local_maxima(imR)
     intM = morphology.closing(intM, footprint=se)
 
@@ -136,8 +136,8 @@ def w_segmentation(roi): #roi is a dict
 
     valid_labels = set()
     for marker in m_props:
-        m_area = marker.area <= 30
-        m_mj_length =  marker.axis_major_length <= 50
+        m_area = marker.area <= 25
+        m_mj_length =  marker.axis_major_length <= 10
         if m_area and m_mj_length:
             valid_labels.add(marker.label)
 
@@ -146,38 +146,20 @@ def w_segmentation(roi): #roi is a dict
         return 
     else:
         markers = np.in1d(m_labels, list(valid_labels)).reshape(m_labels.shape)
-        markers = ndimage.label(markers)[0]
-        m_props = measure.regionprops(label_image=markers, intensity_image=img)
+        ms_label = ndimage.label(markers)[0]      
+        m_props = measure.regionprops(label_image=ms_label, intensity_image=img)
         result_dict = {'num_markers': len(valid_labels),
-                        'markers_props': measure.regionprops(markers, intensity_image=img)} 
-
-        gmag = filters.laplace(img, ksize=3)
-        r_watershed = segmentation.watershed(gmag, markers, watershed_line=False)
-
-        w_labels, w_num = measure.label(r_watershed, return_num=True, connectivity=1)
-        w_props = measure.regionprops(label_image=w_labels, intensity_image=img)
+                        'markers_props': m_props} 
         
-        valid_regions = set()
-        for region in w_props:
-            r_area = region.area <= 30
-            r_mj_length = region.axis_major_length <= 50
-            if r_area and r_mj_length:
-                valid_regions.add(region.label)
+        #plot_markers(markers)
 
-            #checking ROI
-        if len(valid_regions) < 3 or len(valid_regions) > 50:
-            return 
-        else: 
-            result = np.in1d(w_labels, list(valid_regions)).reshape(w_labels.shape)
-            result = ndimage.label(result)[0]
-            result_dict = {'num_markers': len(valid_labels),
-                            'markers': markers,
-                            'markers_props': measure.regionprops(markers, intensity_image=img),
-                            'num_regions': len(valid_regions),
-                            'regions': result, #labels selecionadas
-                            'regions_props': measure.regionprops(result, intensity_image=img)}          
-            return result_dict
- 
+        gmag = filters.sobel(img)
+        #o problema sao os marcadores
+        r_watershed = segmentation.watershed(gmag, watershed_line=False)
+        w_props = measure.regionprops(label_image=r_watershed, intensity_image=img)
+        
+        return r_watershed
+
 img_dir = 'C:\\Users\\Equipacare\\Desktop\\image code\\images'
 data_path = os.path.join(img_dir, '*dcm')
 files = glob.glob(data_path)
@@ -208,8 +190,5 @@ for file in files:
 
     for roi in roi_data:
         results = w_segmentation(roi) #roi is a dict
-        if results is not None:
-            roi_dict.update(results)
-        else:
-            continue
 
+print('end')
