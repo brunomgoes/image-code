@@ -50,16 +50,6 @@ def plot_rois(list):
     axs[2,2].axis('off')
     plt.show()
 
-#function -> wiener filter
-#ERRADO
-def wiener_filter(img):
-    psf = np.ones((5, 5))
-    img = signal.convolve2d(img, psf, 'same')
-    rng = np.random.default_rng()
-    img += 0.1 * img.std() * rng.standard_normal(img.shape)
-    img_wiener = restoration.wiener(img, psf, 1100, clip=True)
-    return img_wiener
-
 #function -> wavelet filter
 def wavelet_filter(img):
     wave_name = 'coif5'
@@ -119,7 +109,7 @@ def wavelet_clahe(img):
     return (pywt.waverec2(coeffs=[cA_new, (cH_new, cV_new, cD_new)], wavelet=wave_name ))
 
 #function -> segmemntation
-def w_segmentation(roi): #roi is a dict
+def w_segmentation(roi, index=None): #roi is a dict
     img = roi['img_roi']
     se = np.ones((3,3), np.uint16)
     imD = morphology.dilation(img, footprint=se)
@@ -131,14 +121,15 @@ def w_segmentation(roi): #roi is a dict
 
     #selecting markers
     #checking local_maxima information
-    m_labels, m_num = measure.label(intM, return_num=True, connectivity=1) #con. 1 -> 4 neighborhood, 
+    m_labels, m_num = measure.label(intM, return_num=True, connectivity=2) #con. 1 -> 4 neighborhood
     m_props = measure.regionprops(label_image=m_labels, intensity_image=img)
 
     valid_labels = set()
     for marker in m_props:
         m_area = marker.area <= 25
         m_mj_length =  marker.axis_major_length <= 10
-        if m_area and m_mj_length:
+        m_imax = marker.intensity_max >= 2000
+        if (m_area and m_mj_length) and m_imax:
             valid_labels.add(marker.label)
 
     #checking ROI
@@ -146,24 +137,81 @@ def w_segmentation(roi): #roi is a dict
         return 
     else:
         markers = np.in1d(m_labels, list(valid_labels)).reshape(m_labels.shape)
-        ms_label = ndimage.label(markers)[0]      
+        ms_label, ms_num = measure.label(markers, return_num=True, connectivity=1) #con. 1 -> 4 neighborhood
         m_props = measure.regionprops(label_image=ms_label, intensity_image=img)
         result_dict = {'num_markers': len(valid_labels),
                         'markers_props': m_props} 
         
-        #plot_markers(markers)
+        #df markers
+        #m_props_table = measure.regionprops_table(label_image=ms_label, intensity_image=img,
+        #                                        properties=('intensity_min', 'axis_minor_length'))
+        #m_props_table = pd.DataFrame(m_props_table)
 
         gmag = filters.sobel(img)
-        #o problema sao os marcadores
-        r_watershed = segmentation.watershed(gmag, watershed_line=False)
+        r_watershed = segmentation.watershed(gmag, markers=ms_label, watershed_line=True)
+        #se não usar as linhas pra separar as regiões, dá erro na hora de selecionar
+        #talvez investigar outra forma de selecionar
+
         w_props = measure.regionprops(label_image=r_watershed, intensity_image=img)
+
+        #df watershed
+        w_props_table = measure.regionprops_table(label_image=r_watershed, intensity_image=img,
+                                                properties=('label',
+                                                            'area',
+                                                            'area_bbox',
+                                                            'area_convex'))
+        w_props_table = pd.DataFrame(w_props_table)
+
+        valid_regions = set()
+        for region in w_props:
+            w_area = (region.area <= 50)
+            w_area_convex = (region.area_convex <= 50)
+            w_mj_length =  (region.axis_major_length <= 25)
+            if ((w_area and w_area_convex) and w_mj_length):
+                valid_regions.add(region.label)
         
-        return r_watershed
+        #checking ROI
+        if len(valid_regions) <= 3:
+            return 
+        else:
+            #regions é um array do tipo bool
+            regions = np.isin(r_watershed, list(valid_regions)).reshape(r_watershed.shape)
+            rg_label, rg_num = measure.label(regions, return_num=True, connectivity=1) #con. 1 -> 4 neighborhood
+            r_props = measure.regionprops(label_image=rg_label, intensity_image=img)
+
+            #df regions
+            r_props_table = measure.regionprops_table(label_image=rg_label, intensity_image=img,
+                                                properties=('label',
+                                                            'area',
+                                                            'area_bbox',
+                                                            'area_convex'))
+            r_props_table = pd.DataFrame(r_props_table)
+            
+            fig, ax = plt.subplots(2,2)
+            ax[0,0].imshow(m_labels, cmap='gray')
+            ax[0,0].set_title('Markers')
+            ax[0,0].axis('off')
+            ax[0,1].imshow(ms_label, cmap='gray')
+            ax[0,1].set_title('Selected Markers')
+            ax[0,1].axis('off')
+            ax[1,0].imshow(r_watershed, cmap='gray')
+            ax[1,0].set_title('Regions')
+            ax[1,0].axis('off')
+            ax[1,1].imshow(rg_label, cmap='gray')
+            ax[1,1].set_title('Selected Regions')
+            ax[1,1].axis('off')
+            #plt.savefig('{0}.jpeg'.format(img_index))
+            #como eliminar alguns formatos de marcador? usar esqueleto?
+
+        return (r_props_table)
 
 img_dir = 'C:\\Users\\Equipacare\\Desktop\\image code\\images'
 data_path = os.path.join(img_dir, '*dcm')
 files = glob.glob(data_path)
 data = [] #list of original images
+
+df_regions = pd.DataFrame()
+
 for file in files:
     dicom_file = pydicom.dcmread(file)
     img_dict = {'name': os.path.basename(file),
@@ -188,7 +236,12 @@ for file in files:
     img_dict.update({'roi_list': roi_data})
     data.append(img_dict) 
 
-    for roi in roi_data:
-        results = w_segmentation(roi) #roi is a dict
+    img_index = 0
+    for roi in roi_data:        
+        df_result = w_segmentation(roi, img_index) #roi is a dict
+        df_regions = df_regions.append(df_result)
+        print('{0}'.format(img_index))
+        img_index += 1
 
+df_regions.plot()
 print('end')
