@@ -8,13 +8,16 @@ import numpy as np
 import pandas as pd
 import pydicom  # working with dicom
 import pywt  # working with wavelets
-from scipy import ndimage, signal
-from skimage import (color, exposure, filters, img_as_float64, img_as_ubyte,
-                     img_as_uint, measure, morphology, restoration,
-                     segmentation)
+from scipy import ndimage
+from scipy import ndimage as ndi
+from scipy import signal
+from skimage import (color, exposure, feature, filters, img_as_float64,
+                     img_as_ubyte, img_as_uint, measure, morphology,
+                     restoration, segmentation)
+
 
 #function -> show image
-def plot_markers(img, title=None):
+def plot_image(img, title=None):
     plt.imshow(img, cmap='gray'), plt.title(title)
     plt.xticks([]), plt.yticks([])
     plt.show()
@@ -82,6 +85,7 @@ def wavelet_clahe(img):
     k = 3
     coeffs = pywt.wavedec2(img, wavelet=wave_name, level=1)
     cA, (cH, cV, cD) = coeffs
+    #por que cA vira uma array com max > 1?
 
     cH_var = np.var(cH)
     cH1 = math.sqrt(cH_var)*math.sqrt(math.pi/2)
@@ -110,14 +114,43 @@ def wavelet_clahe(img):
 
 #function -> segmemntation
 def w_segmentation(roi, index=None): #roi is a dict
-    img = roi['img_roi']
-    se = np.ones((3,3), np.uint16)
-    imD = morphology.dilation(img, footprint=se)
-    imR = morphology.reconstruction(imD, img, method='erosion', footprint=se )
-    imR = imR.astype(int)
+    img = roi
 
-    intM = morphology.local_maxima(imR)
-    intM = morphology.closing(intM, footprint=se)
+    se = np.ones((15,15), np.uint16)
+    imD = morphology.dilation(img, footprint=se)
+    imD1 = imD*img_max
+    imR = morphology.reconstruction(imD, img, method='erosion', footprint=se )
+    imR1 = imR*img_max
+
+    seed = np.copy(imR)
+    seed[1:-1, 1:-1] = imR.min()
+    mask = imR
+
+    dilated = morphology.reconstruction(seed, mask, method='dilation')
+    dilated1 = dilated*img_max
+
+    im_sub = imR - dilated
+
+    # fig, ax = plt.subplots(nrows=2,ncols=2, figsize=(10, 5))
+    # ax[0,0].imshow(imD1.astype('uint'), cmap='gray', vmin=0, vmax=4095)
+    # ax[0,0].axis('off')
+    # ax[0,0].set_title('dilated')
+    # ax[1,0].imshow(dilated1, cmap='gray', vmin=0, vmax=4095)
+    # ax[1,0].axis('off')
+    # ax[1,0].set_title('regional maxima')
+    # ax[0,1].imshow(imR1.astype('uint'), cmap='gray', vmin=0, vmax=4095)
+    # ax[0,1].axis('off')
+    # ax[0,1].set_title('closing by reconstruction')
+    # ax[1,1].imshow(imR1-dilated1, cmap='gray', vmin=0, vmax=4095)
+    # ax[1,1].axis('off')
+    # ax[1,1].set_title('imcbr - regional maxima')
+    # plt.tight_layout()
+    # plt.show()
+
+    threshold_global_otsu = filters.threshold_otsu(im_sub)
+    intM = im_sub >= threshold_global_otsu
+
+    #plot_image(intM)
 
     #selecting markers
     #checking local_maxima information
@@ -127,9 +160,13 @@ def w_segmentation(roi, index=None): #roi is a dict
     valid_labels = set()
     for marker in m_props:
         m_area = marker.area <= 25
+        m_area_bbox = marker.area_bbox <= 25
+        m_area_convex = marker.area_convex <= 25
         m_mj_length =  marker.axis_major_length <= 10
-        m_imax = marker.intensity_max >= 2000
-        if (m_area and m_mj_length) and m_imax:
+        m_imax = marker.intensity_max >= 0.49
+        m_mean = marker.intensity_mean >= 0.49
+        if (((m_area and m_area_bbox) and (m_mj_length and m_area_convex)) and 
+            ((m_imax and m_mean))):
             valid_labels.add(marker.label)
 
     #checking ROI
@@ -139,13 +176,28 @@ def w_segmentation(roi, index=None): #roi is a dict
         markers = np.in1d(m_labels, list(valid_labels)).reshape(m_labels.shape)
         ms_label, ms_num = measure.label(markers, return_num=True, connectivity=1) #con. 1 -> 4 neighborhood
         m_props = measure.regionprops(label_image=ms_label, intensity_image=img)
-        result_dict = {'num_markers': len(valid_labels),
-                        'markers_props': m_props} 
+        #result_dict = {'num_markers': len(valid_labels),
+        #                'markers_props': m_props} 
         
+        #fig, ax = plt.subplots(nrows=1,ncols=2, figsize=(10, 5))
+        #ax[0].imshow(intM, cmap='gray')
+        #ax[0].axis('off')
+        #ax[1].imshow(markers, cmap='gray')
+        #ax[1].axis('off')
+        #plt.tight_layout()
+        #plt.show()
+
         #df markers
-        #m_props_table = measure.regionprops_table(label_image=ms_label, intensity_image=img,
-        #                                        properties=('intensity_min', 'axis_minor_length'))
-        #m_props_table = pd.DataFrame(m_props_table)
+        m_props_table = measure.regionprops_table(label_image=ms_label, intensity_image=img,
+                                                properties=('intensity_min',
+                                                            'intensity_max',
+                                                            'intensity_mean',
+                                                            'area',
+                                                            'area_convex',
+                                                            'area_bbox',
+                                                            'extent',
+                                                            'solidity'))
+        m_props_table = pd.DataFrame(m_props_table)
 
         gmag = filters.sobel(img)
         r_watershed = segmentation.watershed(gmag, markers=ms_label, watershed_line=True)
@@ -156,18 +208,27 @@ def w_segmentation(roi, index=None): #roi is a dict
 
         #df watershed
         w_props_table = measure.regionprops_table(label_image=r_watershed, intensity_image=img,
-                                                properties=('label',
+                                                properties=('intensity_min',
+                                                            'intensity_max',
+                                                            'intensity_mean',
                                                             'area',
+                                                            'area_convex',
                                                             'area_bbox',
-                                                            'area_convex'))
+                                                            'extent',
+                                                            'solidity'))
         w_props_table = pd.DataFrame(w_props_table)
+        #w_props_table['area'].hist(bins=500)
 
         valid_regions = set()
         for region in w_props:
-            w_area = (region.area <= 50)
-            w_area_convex = (region.area_convex <= 50)
-            w_mj_length =  (region.axis_major_length <= 25)
-            if ((w_area and w_area_convex) and w_mj_length):
+            w_area = region.area <= 25
+            w_area_bbox = region.area_bbox <= 25
+            w_area_convex = region.area_convex <= 25
+            w_mj_length =  region.axis_major_length <= 25
+            w_imax = region.intensity_max >= 0.48
+            w_mean = region.intensity_mean >= 0.48
+            if (((w_area and w_area_bbox) and (w_mj_length and w_area_convex)) and 
+                ((w_imax and w_mean))):
                 valid_regions.add(region.label)
         
         #checking ROI
@@ -177,30 +238,30 @@ def w_segmentation(roi, index=None): #roi is a dict
             #regions é um array do tipo bool
             regions = np.isin(r_watershed, list(valid_regions)).reshape(r_watershed.shape)
             rg_label, rg_num = measure.label(regions, return_num=True, connectivity=1) #con. 1 -> 4 neighborhood
-            r_props = measure.regionprops(label_image=rg_label, intensity_image=img)
+            #r_props = measure.regionprops(label_image=rg_label, intensity_image=img)
 
             #df regions
             r_props_table = measure.regionprops_table(label_image=rg_label, intensity_image=img,
-                                                properties=('label',
+                                                properties=('intensity_min',
+                                                            'intensity_max',
+                                                            'intensity_mean',
                                                             'area',
+                                                            'area_convex',
                                                             'area_bbox',
-                                                            'area_convex'))
+                                                            'extent',
+                                                            'solidity'))
             r_props_table = pd.DataFrame(r_props_table)
             
-            fig, ax = plt.subplots(2,2)
-            ax[0,0].imshow(m_labels, cmap='gray')
-            ax[0,0].set_title('Markers')
-            ax[0,0].axis('off')
-            ax[0,1].imshow(ms_label, cmap='gray')
-            ax[0,1].set_title('Selected Markers')
-            ax[0,1].axis('off')
-            ax[1,0].imshow(r_watershed, cmap='gray')
-            ax[1,0].set_title('Regions')
-            ax[1,0].axis('off')
-            ax[1,1].imshow(rg_label, cmap='gray')
-            ax[1,1].set_title('Selected Regions')
-            ax[1,1].axis('off')
-            #plt.savefig('{0}.jpeg'.format(img_index))
+            fig, ax = plt.subplots(nrows=1,ncols=2, figsize=(10, 5))
+            ax[0].imshow(segmentation.mark_boundaries(img, label_img=ms_label, color=(139,0,0)), cmap='gray', vmin=0, vmax=4095)
+            ax[0].axis('off')
+            ax[0].set_title('markers')
+            ax[1].imshow(segmentation.mark_boundaries(img, label_img=rg_label, color=(139,0,0)), cmap='gray', vmin=0, vmax=4095)
+            ax[1].axis('off')
+            ax[1].set_title('regions')
+            plt.tight_layout()
+            #plt.show()
+            plt.savefig('{0}.jpeg'.format(img_index))
             #como eliminar alguns formatos de marcador? usar esqueleto?
 
         return (r_props_table)
@@ -216,32 +277,49 @@ for file in files:
     dicom_file = pydicom.dcmread(file)
     img_dict = {'name': os.path.basename(file),
                 'image': dicom_file.pixel_array}
-    img = dicom_file.pixel_array
+    img_array = dicom_file.pixel_array
+    img_max = img_array.max()
+    img = img_array/img_max
 
-    #create a list of ROIs for each image
-    row, col = img.shape
-    roi_index = 0
-    roi_data = []
-    for x in range(0, row, 50):
-        for y in range(0, col, 50):
-            roi = img[x:x+100, y:y+100]
-            #check if max value in roi is 0
-            if np.max(roi) !=0:
-                roi_dict = {'index': roi_index,
-                            'img_roi': roi,
-                            'x': x,
-                            'y': y}
-                roi_data.append(roi_dict)
-                roi_index += 1
-    img_dict.update({'roi_list': roi_data})
-    data.append(img_dict) 
+    # #create a list of ROIs for each image
+    # row, col = img.shape
+    # roi_index = 0
+    # roi_data = []
+    # roi_median = []
+    # for x in range(0, row, 50):
+    #     for y in range(0, col, 50):
+    #         roi = img[x:x+100, y:y+100]
+    #         #check if max value in roi is 0
+    #         if np.median(roi) > (1500/img_max):
+    #             roi_dict = {'index': roi_index,
+    #                         'img_roi': roi,
+    #                         'x': x,
+    #                         'y': y}
+    #             roi_data.append(roi_dict)
+    #             roi_index += 1
+
+    # img_dict.update({'roi_list': roi_data})
+    # data.append(img_dict) 
 
     img_index = 0
+    roi_1 = img[700:890, 100:600]
+    roi_2 = img[960:1420, 100:330]
+    roi_data = [roi_1, roi_2]
     for roi in roi_data:        
-        df_result = w_segmentation(roi, img_index) #roi is a dict
-        df_regions = df_regions.append(df_result)
+        #pre processing
+        #original
+        df_result1 = w_segmentation(roi, img_index) #roi is a dict
+        print('{0}'.format(img_index))
+        img_index += 1
+       
+        #wavelet
+        im_wave = wavelet_filter(roi)
+        df_result2 = w_segmentation(im_wave, img_index) #roi is a dict
         print('{0}'.format(img_index))
         img_index += 1
 
-df_regions.plot()
-print('end')
+        #wavelet + clahe
+        # im_wave_clahe = wavelet_clahe(roi)
+        # df_result2 = w_segmentation(im_wave_clahe, img_index) #roi is a dict
+        # print('{0}'.format(img_index))
+        # img_index += 1
