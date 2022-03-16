@@ -8,9 +8,7 @@ import numpy as np
 import pandas as pd
 import pydicom  # working with dicom
 import pywt  # working with wavelets
-from scipy import ndimage
-from scipy import ndimage as ndi
-from scipy import signal
+from scipy import ndimage as ndi, signal
 from skimage import (color, exposure, feature, filters, img_as_float64,
                      img_as_ubyte, img_as_uint, measure, morphology,
                      restoration, segmentation)
@@ -54,11 +52,9 @@ def plot_rois(list):
     plt.show()
 
 #function -> wavelet filter
-def wavelet_filter(img):
-    wave_name = 'coif5'
+def wavelet_filter(img, wave_name):
     k = 3
-    coeffs = pywt.wavedec2(img, wavelet=wave_name, level=1)
-    cA, (cH, cV, cD) = coeffs
+    cA, (cH, cV, cD) = pywt.wavedec2(img, wavelet=wave_name, level=1)
 
     cH_var = np.var(cH)
     cH1 = math.sqrt(cH_var)*math.sqrt(math.pi/2)
@@ -78,7 +74,7 @@ def wavelet_filter(img):
     cD_t = cD1 + (k*cD2)
     cD_new = pywt.threshold(data=cD, value=cD_t, mode='soft', substitute=0)
 
-    return (pywt.waverec2(coeffs=[cA, (cH_new, cV_new, cD_new)], wavelet=wave_name ))
+    return (pywt.waverec2(coeffs=[cA, (cH_new, cV_new, cD_new)], wavelet=wave_name))
 
 def wavelet_clahe(img):
     wave_name = 'coif5'
@@ -113,10 +109,10 @@ def wavelet_clahe(img):
     return (pywt.waverec2(coeffs=[cA_new, (cH_new, cV_new, cD_new)], wavelet=wave_name ))
 
 #function -> segmemntation
-def w_segmentation(roi, index=None): #roi is a dict
+def w_segmentation(roi, index=None, title=None): #roi is a dict
     img = roi
 
-    se = np.ones((15,15), np.uint16)
+    se = np.ones((3,3), np.uint16)
     imD = morphology.dilation(img, footprint=se)
     imD1 = imD*img_max
     imR = morphology.reconstruction(imD, img, method='erosion', footprint=se )
@@ -131,21 +127,21 @@ def w_segmentation(roi, index=None): #roi is a dict
 
     im_sub = imR - dilated
 
-    # fig, ax = plt.subplots(nrows=2,ncols=2, figsize=(10, 5))
-    # ax[0,0].imshow(imD1.astype('uint'), cmap='gray', vmin=0, vmax=4095)
-    # ax[0,0].axis('off')
-    # ax[0,0].set_title('dilated')
-    # ax[1,0].imshow(dilated1, cmap='gray', vmin=0, vmax=4095)
-    # ax[1,0].axis('off')
-    # ax[1,0].set_title('regional maxima')
-    # ax[0,1].imshow(imR1.astype('uint'), cmap='gray', vmin=0, vmax=4095)
-    # ax[0,1].axis('off')
-    # ax[0,1].set_title('closing by reconstruction')
-    # ax[1,1].imshow(imR1-dilated1, cmap='gray', vmin=0, vmax=4095)
-    # ax[1,1].axis('off')
-    # ax[1,1].set_title('imcbr - regional maxima')
-    # plt.tight_layout()
-    # plt.show()
+    fig, ax = plt.subplots(nrows=2,ncols=2, figsize=(10, 5))
+    ax[0,0].imshow(imD1.astype('uint'), cmap='gray', vmin=0, vmax=4095)
+    ax[0,0].axis('off')
+    ax[0,0].set_title('dilated')
+    ax[1,0].imshow(dilated1, cmap='gray', vmin=0, vmax=4095)
+    ax[1,0].axis('off')
+    ax[1,0].set_title('regional maxima')
+    ax[0,1].imshow(imR1.astype('uint'), cmap='gray', vmin=0, vmax=4095)
+    ax[0,1].axis('off')
+    ax[0,1].set_title('closing by reconstruction')
+    ax[1,1].imshow(imR1-dilated1, cmap='gray', vmin=0, vmax=4095)
+    ax[1,1].axis('off')
+    ax[1,1].set_title('imcbr - regional maxima')
+    plt.tight_layout()
+    plt.show()
 
     threshold_global_otsu = filters.threshold_otsu(im_sub)
     intM = im_sub >= threshold_global_otsu
@@ -179,13 +175,13 @@ def w_segmentation(roi, index=None): #roi is a dict
         #result_dict = {'num_markers': len(valid_labels),
         #                'markers_props': m_props} 
         
-        #fig, ax = plt.subplots(nrows=1,ncols=2, figsize=(10, 5))
-        #ax[0].imshow(intM, cmap='gray')
-        #ax[0].axis('off')
-        #ax[1].imshow(markers, cmap='gray')
-        #ax[1].axis('off')
-        #plt.tight_layout()
-        #plt.show()
+        fig, ax = plt.subplots(nrows=1,ncols=2, figsize=(10, 5))
+        ax[0].imshow(intM, cmap='gray')
+        ax[0].axis('off')
+        ax[1].imshow(markers, cmap='gray')
+        ax[1].axis('off')
+        plt.tight_layout()
+        plt.show()
 
         #df markers
         m_props_table = measure.regionprops_table(label_image=ms_label, intensity_image=img,
@@ -261,6 +257,7 @@ def w_segmentation(roi, index=None): #roi is a dict
             ax[1].set_title('regions')
             plt.tight_layout()
             #plt.show()
+            plt.suptitle(title)
             plt.savefig('{0}.jpeg'.format(img_index))
             #como eliminar alguns formatos de marcador? usar esqueleto?
 
@@ -308,18 +305,42 @@ for file in files:
     for roi in roi_data:        
         #pre processing
         #original
-        df_result1 = w_segmentation(roi, img_index) #roi is a dict
+        df_result1 = w_segmentation(roi, img_index, 'original') #roi is a dict
         print('{0}'.format(img_index))
         img_index += 1
        
         #wavelet
-        im_wave = wavelet_filter(roi)
-        df_result2 = w_segmentation(im_wave, img_index) #roi is a dict
+        #pywt.families()
+        #pywt.wavelist('coif')
+        im_wave = wavelet_filter(roi, 'coif5')
+        df_result2 = w_segmentation(im_wave, img_index, 'wavelet') #roi is a dict
         print('{0}'.format(img_index))
         img_index += 1
 
         #wavelet + clahe
-        # im_wave_clahe = wavelet_clahe(roi)
-        # df_result2 = w_segmentation(im_wave_clahe, img_index) #roi is a dict
-        # print('{0}'.format(img_index))
-        # img_index += 1
+        im_wave_clahe = wavelet_clahe(roi)
+        df_result3 = w_segmentation(im_wave_clahe, img_index, 'wave + clahe') #roi is a dict
+        print('{0}'.format(img_index))
+        img_index += 1
+
+        #média
+        im_mean = roi*img_max
+        im_mean = filters.rank.mean(im_mean.astype('uint16'), np.ones((3,3), np.uint16))
+        im_mean = im_mean/img_max
+        df_result_4 = w_segmentation(im_mean, img_index, 'mean')
+        print('{0}'.format(img_index))
+        img_index += 1
+
+        #mediana
+        im_median = roi*img_max
+        im_median = filters.rank.median(im_median.astype('uint16'), np.ones((3,3), np.uint16))
+        im_median = im_median/img_max
+        df_result_5 = w_segmentation(im_median, img_index, 'median')
+        print('{0}'.format(img_index))
+        img_index += 1
+
+        #wiener
+        im_wiener = signal.wiener(roi, (3, 3))
+        df_result_6 = w_segmentation(im_wiener, img_index, 'wiener')
+        print('{0}'.format(img_index))
+        img_index += 1
