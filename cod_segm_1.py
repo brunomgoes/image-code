@@ -9,7 +9,6 @@ import pydicom  # working with dicom
 import pywt  # working with wavelets
 from skimage import filters, measure, morphology, segmentation
 
-
 def wavelet_filter(img, wave_name):
     k = 3
     cA, (cH, cV, cD) = pywt.wavedec2(img, wavelet=wave_name, level=1)
@@ -63,17 +62,17 @@ def w_segmentation(roi, index=None, title=None):
     dilated = morphology.reconstruction(seed, mask, method='dilation')
     im_sub = (imR - dilated)
 
-    fig, ax = plt.subplots(nrows=1,ncols=3, figsize=(20,20))
-    ax[0].imshow(seed*4095, cmap='gray', vmin=0, vmax=4095)
-    ax[0].axis('off')
-    ax[0].set_title('recon. by erosion')
-    ax[1].imshow(dilated*4095, cmap='gray', vmin=0, vmax=4095)
-    ax[1].axis('off')
-    ax[1].set_title('background')
-    ax[2].imshow(im_sub*4095, cmap='gray', vmin=0, vmax=4095)
-    ax[2].axis('off')
-    ax[2].set_title('rbe - background')
-    plt.show()
+    #fig, ax = plt.subplots(nrows=1,ncols=3, figsize=(20,20))
+    #ax[0].imshow(seed*4095, cmap='gray', vmin=0, vmax=4095)
+    #ax[0].axis('off')
+    #ax[0].set_title('recon. by erosion')
+    #ax[1].imshow(dilated*4095, cmap='gray', vmin=0, vmax=4095)
+    #ax[1].axis('off')
+    #ax[1].set_title('background')
+    #ax[2].imshow(im_sub*4095, cmap='gray', vmin=0, vmax=4095)
+    #ax[2].axis('off')
+    #ax[2].set_title('rbe - background')
+    #plt.show()
 
     thresh = filters.threshold_otsu(im_sub)
     intM = im_sub >= thresh #imagem binaria com os marcadores
@@ -157,24 +156,24 @@ def w_segmentation(roi, index=None, title=None):
     # ax[1].set_title('markers')
     # plt.show()
 
-    # fig, ax = plt.subplots(nrows=1,ncols=3, figsize=(20,15))
-    # ax[0].imshow(img*4095, cmap='gray', vmin=0, vmax=4095)
-    # ax[0].axis('off')
-    # ax[0].set_title('original')
-    # ax[1].imshow(segmentation.mark_boundaries(img, ms_label))
-    # ax[1].axis('off')
-    # ax[1].set_title('markers')
-    # ax[2].imshow(segmentation.mark_boundaries(img, r_label))
-    # ax[2].axis('off')
-    # ax[2].set_title('watershed')
-    # plt.tight_layout()
-    # plt.suptitle(title)
-    # plt.show()
-    # plt.savefig('{0}.png'.format(index))
+    fig, ax = plt.subplots(nrows=1,ncols=3, figsize=(20,15))
+    ax[0].imshow(img*4095, cmap='gray', vmin=0, vmax=4095)
+    ax[0].axis('off')
+    ax[0].set_title('original')
+    ax[1].imshow(segmentation.mark_boundaries(img, ms_label))
+    ax[1].axis('off')
+    ax[1].set_title('markers')
+    ax[2].imshow(segmentation.mark_boundaries(img, r_label))
+    ax[2].axis('off')
+    ax[2].set_title('watershed')
+    plt.tight_layout()
+    plt.suptitle(title)
+    #plt.show()
+    plt.savefig('{0}.png'.format(index))
 
     return r_watershed
 
-img_dir = 'C:\\Users\\br_go\\Desktop\\CODE\\images'
+img_dir = 'C:\\Users\\br_go\\Desktop\\image-code\\images'
 data_path = os.path.join(img_dir, '*dcm')
 files = glob.glob(data_path)
 data = [] #list of original images
@@ -192,8 +191,8 @@ roi_data = [roi_1, roi_2, roi_3]
 i = 0
 for roi in roi_data:
     #original
-    # result_1 = w_segmentation(roi, index=i, title='original')
-    # i += 1
+    result_1 = w_segmentation(roi, index=i, title='original')
+    i += 1
 
     #wavelet
     im_wave = wavelet_filter(roi, 'coif5')
