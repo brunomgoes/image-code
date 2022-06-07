@@ -1,18 +1,13 @@
 import glob
 import math
 import os
-import random
 
-import cv2
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import pydicom  # working with dicom
 import pywt  # working with wavelets
 from scipy import ndimage
-from skimage import (util, color, exposure, feature, filters, img_as_float64,
-                     img_as_ubyte, img_as_uint, measure, morphology,
-                     restoration, segmentation)
+from skimage import (feature, filters, measure, morphology, segmentation)
 
 def wavelet_filter(img, wave_name):
     k = 3
@@ -44,36 +39,25 @@ def f_segmentation(roi, index=None, title=None):
     img = np.copy(roi)
     img = img/4095
 
-    img_grad = np.gradient(img)
-    img_norm = np.linalg.norm(img_grad, axis=0)
+    im_canny = feature.canny(img, sigma=0.1)
 
-    r1 = 1/(1 + img_norm)
-    r1 = util.invert(r1)
-
-    img_sobel = filters.sobel(img)
-
-    seg_1 = r1 >= 0.018
-    seg_2 = img_sobel >= 0.018
-
-    markers = np.logical_and(seg_1, seg_2)
-    
     kernel = np.array([[1, 0, 1, 0, 1],
-                   [0, 1, 1, 1, 0],
-                   [1, 1, 1, 1, 1],
-                   [0, 1, 1, 1, 0],
-                   [1, 0, 1, 0, 1]])
+                    [0, 1, 1, 1, 0],
+                    [1, 1, 1, 1, 1],
+                    [0, 1, 1, 1, 0],
+                    [1, 0, 1, 0, 1]])
 
-    morf_1 = ndimage.convolve(markers, kernel)
+    morf_1 = ndimage.convolve(im_canny, kernel)
 
     se = np.array([[0, 1, 0],
                 [1, 1, 1],
                 [0, 1, 0]])
 
-    morf_2 = morphology.dilation(markers, footprint=se)
-    morf_2 = morphology.reconstruction(seed=morf_2, mask=markers, method='erosion', footprint=se)
+    morf_2 = morphology.dilation(morf_1, footprint=se)
+    morf_2 = morphology.reconstruction(seed=morf_2, mask=im_canny, method='erosion', footprint=se)
 
     skiz = morphology.skeletonize(morf_2)
-    m_labels = measure.label(morf_2, connectivity=1)
+    m_labels = measure.label(skiz, connectivity=1)
 
     gmag = filters.sobel(img)
     r_watershed = segmentation.watershed(gmag, markers=m_labels, watershed_line=True)
@@ -93,7 +77,7 @@ def f_segmentation(roi, index=None, title=None):
     #plt.show()
     plt.savefig('{0}.png'.format(index))
 
-    return (r_watershed)
+    return r_watershed
 
 img_dir = 'C:\\Users\\br_go\\Desktop\\image-code\\images'
 data_path = os.path.join(img_dir, '*dcm')
@@ -113,6 +97,7 @@ roi_4 = data[4][830:980, 760:910]
 roi_5 = data[5][1415:1565, 265:415]
 
 roi_data = [roi_0, roi_1, roi_2, roi_3, roi_4, roi_5]
+
 i = 0
 for roi in roi_data:
     #original

@@ -1,22 +1,94 @@
 .vscode/launch.json
-images/22678953_b9a4da5f2dae63a9_MG_R_CC_ANON.dcm
-images/24055203_606e9b184978a350_MG_L_CC_ANON.dcm
-images/24055654_6f1aef40b3775182_MG_R_CC_ANON.dcm
-results 1/0.png
-results 1/1.png
-results 1/2.png
-results 1/3.png
-results 1/4.png
-results 1/5.png
-results 2 - morf_2/0.png
-results 2 - morf_2/1.png
-results 2 - morf_2/2.png
-results 2 - morf_2/3.png
-results 2 - morf_2/4.png
-results 2 - morf_2/5.png
-results 2 - skiz/0.png
-results 2 - skiz/1.png
-results 2 - skiz/2.png
-results 2 - skiz/3.png
-results 2 - skiz/4.png
-results 2 - skiz/5.png
+cod_segm_1.ipynb
+cod_segm_2.ipynb
+cod_segm_3.ipynb
+cod_segm_4.ipynb
+
+images/birad_4a_22678953_b9a4da5f2dae63a9_MG_R_CC_ANONn.dcm
+images/birad_4c_20587080_b6a4f750c6df4f90_MG_R_ML_ANONn.dcm
+images/birad_4c_22579870_301f1776aebbf5d2_MG_L_CC_ANONn.dcm
+images/birad_4c_24055600_6f1aef40b3775182_MG_R_ML_ANONn.dcm
+images/birad_5_22613770_45c7f44839fd9e68_MG_R_CC_ANONn.dcm
+images/birad_5_22614236_1e5c3af078f74b05_MG_L_CC_ANONn.dcm
+images test/birad_4c_20587054_b6a4f750c6df4f90_MG_R_CC_ANONn.dcm
+images test/birad_4c_20587080_b6a4f750c6df4f90_MG_R_ML_ANONn.dcm
+images test/birad_4c_22579870_301f1776aebbf5d2_MG_L_CC_ANONn.dcm
+images test/birad_4c_22579916_301f1776aebbf5d2_MG_L_ML_ANONn.dcm
+images test/birad_5_24055149_606e9b184978a350_MG_L_ML_ANONn.dcm
+images test/birad_5_24055203_606e9b184978a350_MG_L_CC_ANONn.dcm
+images test/birad_5_24065251_c4b995eddb3c510c_MG_L_ML_ANONn.dcm
+images test/birad_5_24065289_c4b995eddb3c510c_MG_L_CC_ANONn.dcm
+results - code 1/0.png
+results - code 1/1.png
+results - code 1/2.png
+results - code 1/3.png
+results - code 1/4.png
+results - code 1/5.png
+results - code 1/6.png
+results - code 1/7.png
+results - code 1/8.png
+results - code 1/9.png
+results - code 1/10.png
+results - code 1/11.png
+results - code 2 - morf 2/0.png
+results - code 2 - morf 2/1.png
+results - code 2 - morf 2/2.png
+results - code 2 - morf 2/3.png
+results - code 2 - morf 2/4.png
+results - code 2 - morf 2/5.png
+results - code 2 - morf 2/6.png
+results - code 2 - morf 2/7.png
+results - code 2 - morf 2/8.png
+results - code 2 - morf 2/9.png
+results - code 2 - morf 2/10.png
+results - code 2 - morf 2/11.png
+results - code 2 - skiz/0.png
+results - code 2 - skiz/1.png
+results - code 2 - skiz/2.png
+results - code 2 - skiz/3.png
+results - code 2 - skiz/4.png
+results - code 2 - skiz/5.png
+results - code 2 - skiz/6.png
+results - code 2 - skiz/7.png
+results - code 2 - skiz/8.png
+results - code 2 - skiz/9.png
+results - code 2 - skiz/10.png
+results - code 2 - skiz/11.png
+results - code 3 - canny/0.png
+results - code 3 - canny/1.png
+results - code 3 - canny/2.png
+results - code 3 - canny/3.png
+results - code 3 - canny/4.png
+results - code 3 - canny/5.png
+results - code 3 - canny/6.png
+results - code 3 - canny/7.png
+results - code 3 - canny/8.png
+results - code 3 - canny/9.png
+results - code 3 - canny/10.png
+results - code 3 - canny/11.png
+results - code 3 - morf_2/0.png
+results - code 3 - morf_2/1.png
+results - code 3 - morf_2/2.png
+results - code 3 - morf_2/3.png
+results - code 3 - morf_2/4.png
+results - code 3 - morf_2/5.png
+results - code 3 - morf_2/6.png
+results - code 3 - morf_2/7.png
+results - code 3 - morf_2/8.png
+results - code 3 - morf_2/9.png
+results - code 3 - morf_2/10.png
+results - code 3 - morf_2/11.png
+results - code 3 - skiz/0.png
+results - code 3 - skiz/1.png
+results - code 3 - skiz/2.png
+results - code 3 - skiz/3.png
+results - code 3 - skiz/4.png
+results - code 3 - skiz/5.png
+results - code 3 - skiz/6.png
+results - code 3 - skiz/7.png
+results - code 3 - skiz/8.png
+results - code 3 - skiz/9.png
+results - code 3 - skiz/10.png
+results - code 3 - skiz/11.png
+cod_segm_1.ipynb
+cod_segm_2.ipynb

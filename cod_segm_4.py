@@ -1,5 +1,4 @@
 import glob
-import math
 import os
 
 import matplotlib.pyplot as plt
@@ -7,54 +6,20 @@ import numpy as np
 import pandas as pd
 import pydicom  # working with dicom
 import pywt  # working with wavelets
-from skimage import filters, measure, morphology, segmentation
+from skimage import (filters, measure, morphology, segmentation)
 
-def wavelet_filter(img, wave_name):
+def f_segmentation(roi, wave_name, index=None, title=None):
+    roi_copy = np.copy(roi)
+    roi_copy = roi_copy/4095
+
     k = 3
-    cA, (cH, cV, cD) = pywt.wavedec2(img, wavelet=wave_name, level=1)
+    cA, (cH, cV, cD) = pywt.wavedec2(roi_copy, wavelet=wave_name, level=1)
 
-    cH_var = np.var(cH)
-    cH1 = math.sqrt(cH_var)*math.sqrt(math.pi/2)
-    cH2 = math.sqrt(((4-math.pi)/2)*cH_var)
-    cH_t = cH1 + (k*cH2)
-    cH_new = pywt.threshold(data=cH, value=cH_t, mode='soft', substitute=0)
+    img = np.copy(cA)
 
-    cV_var = np.var(cV)
-    cV1 = math.sqrt(cV_var)*math.sqrt(math.pi/2)
-    cV2 = math.sqrt(((4-math.pi)/2)*cV_var)
-    cV_t = cV1 + (k*cV2)
-    cV_new = pywt.threshold(data=cV, value=cV_t, mode='soft', substitute=0)
-
-    cD_var = np.var(cD)
-    cD1 = math.sqrt(cD_var)*math.sqrt(math.pi/2)
-    cD2 = math.sqrt(((4-math.pi)/2)*cD_var)
-    cD_t = cD1 + (k*cD2)
-    cD_new = pywt.threshold(data=cD, value=cD_t, mode='soft', substitute=0)
-
-    result = pywt.waverec2(coeffs=[cA, (cH_new, cV_new, cD_new)], wavelet=wave_name)
-
-    return (result.astype('uint16'))
-
-def w_segmentation(roi, index=None, title=None):
-    i
-    mg = np.copy(roi)
-    img = img/4095
-    
     se = np.ones((3,3), np.uint16)
     imD = morphology.dilation(img, footprint=se)
     imR = morphology.reconstruction(seed=imD, mask=img, method='erosion', footprint=se)
-
-    # fig, ax = plt.subplots(nrows=1,ncols=3, figsize=(20,20))
-    # ax[0].imshow(img*4095, cmap='gray', vmin=0, vmax=4095)
-    # ax[0].axis('off')
-    # ax[0].set_title('original')
-    # ax[1].imshow(imD*4095, cmap='gray', vmin=0, vmax=4095)
-    # ax[1].axis('off')
-    # ax[1].set_title('dilation')
-    # ax[2].imshow(imR*4095, cmap='gray', vmin=0, vmax=4095)
-    # ax[2].axis('off')
-    # ax[2].set_title('reconstruction by erosion')
-    # plt.show()
 
     seed = np.copy(imR)
     seed[1:-1, 1:-1] = imR.min() #set its border to be the pixel values in the original image
@@ -62,18 +27,6 @@ def w_segmentation(roi, index=None, title=None):
 
     dilated = morphology.reconstruction(seed, mask, method='dilation')
     im_sub = (imR - dilated)
-
-    #fig, ax = plt.subplots(nrows=1,ncols=3, figsize=(20,20))
-    #ax[0].imshow(seed*4095, cmap='gray', vmin=0, vmax=4095)
-    #ax[0].axis('off')
-    #ax[0].set_title('recon. by erosion')
-    #ax[1].imshow(dilated*4095, cmap='gray', vmin=0, vmax=4095)
-    #ax[1].axis('off')
-    #ax[1].set_title('background')
-    #ax[2].imshow(im_sub*4095, cmap='gray', vmin=0, vmax=4095)
-    #ax[2].axis('off')
-    #ax[2].set_title('rbe - background')
-    #plt.show()
 
     thresh = filters.threshold_otsu(im_sub)
     intM = im_sub >= thresh #imagem binaria com os marcadores
@@ -115,15 +68,6 @@ def w_segmentation(roi, index=None, title=None):
     
     ms_df = pd.DataFrame(ms_props_table)
 
-    # fig, ax = plt.subplots(nrows=1,ncols=2, figsize=(20,15))
-    # ax[0].imshow(segmentation.mark_boundaries(img, m_label))
-    # ax[0].axis('off')
-    # ax[0].set_title('original')
-    # ax[1].imshow(segmentation.mark_boundaries(img, ms_label))
-    # ax[1].axis('off')
-    # ax[1].set_title('markers')
-    # plt.show()
-
     gmag = filters.sobel(img)
     r_watershed = segmentation.watershed(gmag, markers=ms_label, watershed_line=True)
     w_props = measure.regionprops(label_image=r_watershed, intensity_image=img)
@@ -147,15 +91,6 @@ def w_segmentation(roi, index=None, title=None):
 
     regions = np.in1d(r_watershed, list(valid_regions)).reshape(r_watershed.shape)
     r_label = measure.label(regions, connectivity=1)
-
-    # fig, ax = plt.subplots(nrows=1,ncols=2, figsize=(20,15))
-    # ax[0].imshow(segmentation.mark_boundaries(img, r_watershed))
-    # ax[0].axis('off')
-    # ax[0].set_title('original')
-    # ax[1].imshow(segmentation.mark_boundaries(img, r_label))
-    # ax[1].axis('off')
-    # ax[1].set_title('markers')
-    # plt.show()
 
     fig, ax = plt.subplots(nrows=1,ncols=3, figsize=(20,15))
     ax[0].imshow(img*4095, cmap='gray', vmin=0, vmax=4095)
@@ -195,14 +130,6 @@ roi_data = [roi_0, roi_1, roi_2, roi_3, roi_4, roi_5]
 
 i = 0
 for roi in roi_data:
-    plt.imshow(roi, cmap='gray', vmin=0, vmax=4095)
-    plt.show()
-
     #original
-    result_1 = w_segmentation(roi, index=i, title='original')
-    i += 1
-
-    #wavelet
-    im_wave = wavelet_filter(roi, 'coif5')
-    result_2 = w_segmentation(im_wave, index=i, title='wavelet')
+    result_1 = f_segmentation(roi, wave_name='coif5', index=i, title='original')
     i += 1
