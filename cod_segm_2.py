@@ -105,16 +105,16 @@ for file in files:
     img_array = dicom_file.pixel_array
     data.append(img_array) 
 
-roi_0 = data[0][490:640, 1050:1200]
-roi_1 = data[1][2000:2150, 905:1055]
-roi_2 = data[2][1325:1475, 330:480] 
-roi_3 = data[3][2660:2810, 800:950]
-roi_4 = data[4][830:980, 760:910]
-roi_5 = data[5][1415:1565, 265:415]
+# roi_0 = data[0][490:640, 1050:1200]
+# roi_1 = data[1][2000:2150, 905:1055]
+# roi_2 = data[2][1325:1475, 330:480] 
+# roi_3 = data[3][2660:2810, 800:950]
+# roi_4 = data[4][830:980, 760:910]
+# roi_5 = data[5][1415:1565, 265:415]
 
-roi_data = [roi_0, roi_1, roi_2, roi_3, roi_4, roi_5]
+# roi_data = [roi_0, roi_1, roi_2, roi_3, roi_4, roi_5]
 i = 0
-for roi in roi_data:
+for roi in data:
     #original
     result_1 = f_segmentation(roi, index=i, title='original')
     i += 1

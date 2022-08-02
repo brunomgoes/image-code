@@ -36,8 +36,7 @@ def wavelet_filter(img, wave_name):
     return (result.astype('uint16'))
 
 def w_segmentation(roi, index=None, title=None):
-    i
-    mg = np.copy(roi)
+    img = np.copy(roi)
     img = img/4095
     
     se = np.ones((3,3), np.uint16)
@@ -172,6 +171,8 @@ def w_segmentation(roi, index=None, title=None):
     #plt.show()
     plt.savefig('{0}.png'.format(index))
 
+    print(index)
+
     return r_watershed
 
 img_dir = 'C:\\Users\\br_go\\Desktop\\image-code\\images'
@@ -184,17 +185,17 @@ for file in files:
     img_array = dicom_file.pixel_array
     data.append(img_array) 
 
-roi_0 = data[0][490:640, 1050:1200]
-roi_1 = data[1][2000:2150, 905:1055]
-roi_2 = data[2][1325:1475, 330:480] 
-roi_3 = data[3][2660:2810, 800:950]
-roi_4 = data[4][830:980, 760:910]
-roi_5 = data[5][1415:1565, 265:415]
+# roi_0 = data[0][490:640, 1050:1200]
+# roi_1 = data[1][2000:2150, 905:1055]
+# roi_2 = data[2][1325:1475, 330:480] 
+# roi_3 = data[3][2660:2810, 800:950]
+# roi_4 = data[4][830:980, 760:910]
+# roi_5 = data[5][1415:1565, 265:415]
 
-roi_data = [roi_0, roi_1, roi_2, roi_3, roi_4, roi_5]
+# roi_data = [roi_0, roi_1, roi_2, roi_3, roi_4, roi_5]
 
 i = 0
-for roi in roi_data:
+for roi in data:
     plt.imshow(roi, cmap='gray', vmin=0, vmax=4095)
     plt.show()
 
