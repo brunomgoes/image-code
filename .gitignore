@@ -90,5 +90,84 @@ results - code 3 - skiz/8.png
 results - code 3 - skiz/9.png
 results - code 3 - skiz/10.png
 results - code 3 - skiz/11.png
-cod_segm_1.ipynb
-cod_segm_2.ipynb
+
+0-wavelet-clahe
+images/birad_2_20587148_fd746d25eb40b3dc_MG_R_CC_ANONn.dcm
+images/birad_2_20587346_e634830794f5c1bd_MG_R_ML_ANONn.dcm
+images/birad_2_20587544_d571b5880ad2a016_MG_R_CC_ANONn.dcm
+images/birad_2_22427864_bbd6a3a35438c11b_MG_L_CC_ANONn.dcm
+images/birad_2_30011484_349323117bf0fd93_MG_R_CC_ANONn.dcm
+images/birad_2_30011850_4f20c1285d8f0b1f_MG_R_ML_ANONn.dcm
+images/birad_2_50994616_de4c34099d6ef8de_MG_R_CC_ANONn.dcm
+images/birad_2_50996228_8c1b2bd64ca4d778_MG_L_CC_ANONn.dcm
+images/birad_2_50997223_9054942f7be52dd9_MG_L_ML_ANONn.dcm
+images/birad_2_50998258_f34ee0ab6591b792_MG_R_CC_ANONn.dcm
+images/birad_2_51048945_f3e93e889a7746f0_MG_L_CC_ANONn.dcm
+images/birad_2_51049462_6f64793857feb5d0_MG_L_ML_ANONn.dcm
+images/birad_2_53586805_e5f3f68b9ce31228_MG_R_CC_ANONn.dcm
+images/birad_2_53586987_809e3f43339f93c6_MG_R_ML_ANONn.dcm
+images/birad_2_53587041_809e3f43339f93c6_MG_R_CC_ANONn.dcm
+images/birad_2_53587599_11e6732579acf692_MG_L_CC_ANONn.dcm
+images/birad_4b_22670978_f571fd4e63c718e3_MG_L_CC_ANONn.dcm
+images/birad_4c_24055445_ac3185e18ffdc7b6_MG_L_ML_ANONn.dcm
+images/birad_4c_30011507_349323117bf0fd93_MG_L_CC_ANONn.dcm
+images/birad_5_22580576_2a5b932da4ce5ca1_MG_L_ML_ANONn.dcm
+tabelas - imagens x roi/0-original
+tabelas - imagens x roi/0-wavelet
+tabelas - imagens x roi/1-original
+tabelas - imagens x roi/1-wavelet
+tabelas - imagens x roi/1-wavelet-clahe
+tabelas - imagens x roi/2-original
+tabelas - imagens x roi/2-wavelet
+tabelas - imagens x roi/2-wavelet-clahe
+tabelas - imagens x roi/3-original
+tabelas - imagens x roi/3-wavelet
+tabelas - imagens x roi/3-wavelet-clahe
+tabelas - imagens x roi/4-original
+tabelas - imagens x roi/4-wavelet
+tabelas - imagens x roi/4-wavelet-clahe
+tabelas - imagens x roi/5-original
+tabelas - imagens x roi/5-wavelet
+tabelas - imagens x roi/5-wavelet-clahe
+tabelas - imagens x roi/6-original
+tabelas - imagens x roi/6-wavelet
+tabelas - imagens x roi/6-wavelet-clahe
+tabelas - imagens x roi/7-original
+tabelas - imagens x roi/7-wavelet
+tabelas - imagens x roi/7-wavelet-clahe
+tabelas - imagens x roi/8-original
+tabelas - imagens x roi/8-wavelet
+tabelas - imagens x roi/8-wavelet-clahe
+tabelas - imagens x roi/9-original
+tabelas - imagens x roi/9-wavelet
+tabelas - imagens x roi/9-wavelet-clahe
+tabelas - imagens x roi/10-original
+tabelas - imagens x roi/10-wavelet
+tabelas - imagens x roi/10-wavelet-clahe
+tabelas - imagens x roi/11-original
+tabelas - imagens x roi/11-wavelet
+tabelas - imagens x roi/11-wavelet-clahe
+tabelas - imagens x roi/12-original
+tabelas - imagens x roi/12-wavelet
+tabelas - imagens x roi/12-wavelet-clahe
+tabelas - imagens x roi/13-original
+tabelas - imagens x roi/13-wavelet
+tabelas - imagens x roi/13-wavelet-clahe
+tabelas - imagens x roi/14-original
+tabelas - imagens x roi/14-wavelet
+tabelas - imagens x roi/14-wavelet-clahe
+tabelas - imagens x roi/15-original
+tabelas - imagens x roi/15-wavelet
+tabelas - imagens x roi/15-wavelet-clahe
+tabelas - imagens x roi/16-original
+tabelas - imagens x roi/16-wavelet
+tabelas - imagens x roi/16-wavelet-clahe
+tabelas - imagens x roi/17-original
+tabelas - imagens x roi/17-wavelet
+tabelas - imagens x roi/17-wavelet-clahe
+tabelas - imagens x roi/18-original
+tabelas - imagens x roi/18-wavelet
+tabelas - imagens x roi/18-wavelet-clahe
+tabelas - imagens x roi/19-original
+tabelas - imagens x roi/19-wavelet
+tabelas - imagens x roi/19-wavelet-clahe
