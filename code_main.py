@@ -12,7 +12,6 @@ import pywt  # working with wavelets
 from scipy import ndimage
 from skimage import exposure, filters, measure, morphology, segmentation, util
 
-
 def divide_rois(img): # in: image float64; out: list of dict
     img_copy = np.copy(img)
 
@@ -192,18 +191,18 @@ def segm_1(img_array): # in: image float64, out: label
     gmag = filters.sobel(img)
     r_watershed = segmentation.watershed(gmag, markers=m_label, watershed_line=True)
 
-    # fig, ax = plt.subplots(nrows=1,ncols=3, figsize=(20,15))
-    # ax[0].imshow(img*4095, cmap='gray', vmin=0, vmax=4095)
-    # ax[0].axis('off')
-    # ax[0].set_title('original')
-    # ax[1].imshow(segmentation.mark_boundaries(img, m_label))
-    # ax[1].axis('off')
-    # ax[1].set_title('markers')
-    # ax[2].imshow(segmentation.mark_boundaries(img, r_watershed))
-    # ax[2].axis('off')
-    # ax[2].set_title('watershed')
-    # plt.tight_layout()
-    # plt.show()
+    fig, ax = plt.subplots(nrows=1,ncols=3, figsize=(20,15))
+    ax[0].imshow(img*4095, cmap='gray', vmin=0, vmax=4095)
+    ax[0].axis('off')
+    ax[0].set_title('original')
+    ax[1].imshow(segmentation.mark_boundaries(img, m_label))
+    ax[1].axis('off')
+    ax[1].set_title('markers')
+    ax[2].imshow(segmentation.mark_boundaries(img, r_watershed))
+    ax[2].axis('off')
+    ax[2].set_title('watershed')
+    plt.tight_layout()
+    plt.show()
     #.savefig('{0}.png'.format(index))
 
     return r_watershed
@@ -263,17 +262,17 @@ def segm_2(img_array): # tese - evanivaldo - in: image float64, out: binary
     morf_2 = morphology.dilation(markers, footprint=se)
     morf_2 = morphology.reconstruction(seed=morf_2, mask=markers, method='erosion', footprint=se)
 
-    # fig, ax = plt.subplots(nrows=1,ncols=3, figsize=(20,20))
-    # ax[0].imshow(markers, cmap='gray', vmin=0, vmax=1)
-    # ax[0].axis('off')
-    # ax[0].set_title('marcadores')
-    # ax[1].imshow(morf_1, cmap='gray', vmin=0, vmax=1)
-    # ax[1].axis('off')
-    # ax[1].set_title('filtro asterisco')
-    # ax[2].imshow(morf_2, cmap='gray', vmin=0, vmax=1)
-    # ax[2].axis('off')
-    # ax[2].set_title('dilatação - recon. por erosão')
-    # plt.show()
+    fig, ax = plt.subplots(nrows=1,ncols=3, figsize=(20,20))
+    ax[0].imshow(markers, cmap='gray', vmin=0, vmax=1)
+    ax[0].axis('off')
+    ax[0].set_title('marcadores')
+    ax[1].imshow(morf_1, cmap='gray', vmin=0, vmax=1)
+    ax[1].axis('off')
+    ax[1].set_title('filtro asterisco')
+    ax[2].imshow(morf_2, cmap='gray', vmin=0, vmax=1)
+    ax[2].axis('off')
+    ax[2].set_title('dilatação - recon. por erosão')
+    plt.show()
 
     return morf_2
 
@@ -340,6 +339,8 @@ def segm_5(img_array):
 
     return img
 
+img_dir = 'C:\\Users\\br_go\\Desktop\\image-code\\images'
+
 data_path = os.path.join(img_dir, '*dcm')
 files = glob.glob(data_path)
 data = [] #list of original images
@@ -354,7 +355,7 @@ j = 0
 for img in data:
     im_wave = wavelet_filter(img, wave_name='coif5')
     im_wave_clahe = wavelet_clahe(img, wave_name='coif5')
-    im_segm_5 = segm_5(img)
+    im_segm_1 = segm_1(img)
     j+=1
 
     cv2.imshow('img', img)
